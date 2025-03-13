@@ -1,0 +1,3 @@
+- FCNN corresponds to what I call MLP++ in my report(originally named mlp_pp). I have Included the 2 previous iterations in case of any reference required(for hyperparameter tuning, etc.)
+- models.py contains the implementation of all networks involved in this problem
+- in utils.py there is an implementation of EarlyStopping Callback which was used at the beginning to reduce training time
