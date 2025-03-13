@@ -1,0 +1,150 @@
+Trial 0 finished with value: 0.9900000095367432 and parameters: {'num_layers': 3, 'dropout_rate': 0.2, 'hidden_size_0': 1000, 'hidden_size_1': 750, 'hidden_size_2': 4200}. Best is trial 0 with value: 0.9900000095367432.
+Trial 1 finished with value: 0.9900000095367432 and parameters: {'num_layers': 2, 'dropout_rate': 0.1, 'hidden_size_0': 4800, 'hidden_size_1': 3550}. Best is trial 0 with value: 0.9900000095367432.
+Trial 2 finished with value: 0.9800000190734863 and parameters: {'num_layers': 4, 'dropout_rate': 0.3, 'hidden_size_0': 3950, 'hidden_size_1': 1400, 'hidden_size_2': 2100, 'hidden_size_3': 4250}. Best is trial 0 with value: 0.9900000095367432.
+Trial 3 finished with value: 0.9900000095367432 and parameters: {'num_layers': 4, 'dropout_rate': 0.1, 'hidden_size_0': 1050, 'hidden_size_1': 2950, 'hidden_size_2': 4450, 'hidden_size_3': 2850}. Best is trial 0 with value: 0.9900000095367432.
+Trial 4 finished with value: 0.9900000095367432 and parameters: {'num_layers': 2, 'dropout_rate': 0.1, 'hidden_size_0': 3800, 'hidden_size_1': 3800}. Best is trial 0 with value: 0.9900000095367432.
+Trial 5 pruned.
+Trial 6 pruned.
+Trial 7 pruned.
+Trial 8 pruned.
+Trial 9 pruned.
+Trial 10 pruned.
+Trial 11 pruned.
+Trial 12 pruned.
+Trial 13 pruned.
+Trial 14 pruned.
+Trial 15 pruned.
+Trial 16 pruned.
+Trial 17 finished with value: 0.9900000095367432 and parameters: {'num_layers': 2, 'dropout_rate': 0.1, 'hidden_size_0': 3700, 'hidden_size_1': 150}. Best is trial 0 with value: 0.9900000095367432.
+Trial 18 pruned.
+Trial 19 pruned.
+Trial 20 pruned.
+Trial 21 pruned.
+Trial 22 pruned.
+Trial 23 pruned.
+Trial 24 pruned.
+Trial 25 pruned.
+Trial 26 pruned.
+Trial 27 finished with value: 1.0 and parameters: {'num_layers': 4, 'dropout_rate': 0.2, 'hidden_size_0': 650, 'hidden_size_1': 850, 'hidden_size_2': 2500, 'hidden_size_3': 4850}. Best is trial 27 with value: 1.0.
+Trial 28 pruned.
+Trial 29 pruned.
+Trial 30 pruned.
+Trial 31 pruned.
+Trial 32 pruned.
+Trial 33 pruned.
+Trial 34 pruned.
+Trial 35 finished with value: 0.9900000095367432 and parameters: {'num_layers': 2, 'dropout_rate': 0.3, 'hidden_size_0': 1050, 'hidden_size_1': 3300}. Best is trial 27 with value: 1.0.
+Trial 36 pruned.
+Trial 37 pruned.
+Trial 38 pruned.
+Trial 39 finished with value: 0.9900000095367432 and parameters: {'num_layers': 3, 'dropout_rate': 0.2, 'hidden_size_0': 4450, 'hidden_size_1': 1350, 'hidden_size_2': 600}. Best is trial 27 with value: 1.0.
+Trial 40 finished with value: 0.9900000095367432 and parameters: {'num_layers': 1, 'dropout_rate': 0.3, 'hidden_size_0': 1200}. Best is trial 27 with value: 1.0.
+Trial 41 pruned.
+Trial 42 pruned.
+Trial 43 pruned.
+Trial 44 pruned.
+Trial 45 pruned.
+Trial 46 pruned.
+Trial 47 pruned.
+Trial 48 pruned.
+Trial 49 pruned.
+Trial 50 finished with value: 0.9800000190734863 and parameters: {'num_layers': 4, 'dropout_rate': 0.0, 'hidden_size_0': 300, 'hidden_size_1': 1750, 'hidden_size_2': 4400, 'hidden_size_3': 3200}. Best is trial 27 with value: 1.0.
+Trial 51 pruned.
+Trial 52 pruned.
+Trial 53 pruned.
+Trial 54 pruned.
+Trial 55 pruned.
+Trial 56 pruned.
+Trial 57 finished with value: 0.9900000095367432 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 4350, 'hidden_size_1': 2400, 'hidden_size_2': 2350}. Best is trial 27 with value: 1.0.
+Trial 58 pruned.
+Trial 59 pruned.
+Trial 60 pruned.
+Trial 61 pruned.
+Trial 62 pruned.
+Trial 63 pruned.
+Trial 64 finished with value: 0.9900000095367432 and parameters: {'num_layers': 2, 'dropout_rate': 0.1, 'hidden_size_0': 2450, 'hidden_size_1': 2750}. Best is trial 27 with value: 1.0.
+Trial 65 pruned.
+Trial 66 pruned.
+Trial 67 pruned.
+Trial 68 pruned.
+Trial 69 pruned.
+Trial 70 pruned.
+Trial 71 pruned.
+Trial 72 pruned.
+Trial 73 pruned.
+Trial 74 pruned.
+Trial 75 pruned.
+Trial 76 finished with value: 0.9800000190734863 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 3950, 'hidden_size_1': 700, 'hidden_size_2': 400}. Best is trial 27 with value: 1.0.
+Trial 77 pruned.
+Trial 78 pruned.
+Trial 79 pruned.
+Trial 80 pruned.
+Trial 81 pruned.
+Trial 82 pruned.
+Trial 83 finished with value: 0.9900000095367432 and parameters: {'num_layers': 1, 'dropout_rate': 0.3, 'hidden_size_0': 250}. Best is trial 27 with value: 1.0.
+Trial 84 pruned.
+Trial 85 pruned.
+Trial 86 pruned.
+Trial 87 pruned.
+Trial 88 pruned.
+Trial 89 finished with value: 0.9900000095367432 and parameters: {'num_layers': 4, 'dropout_rate': 0.2, 'hidden_size_0': 4800, 'hidden_size_1': 200, 'hidden_size_2': 1200, 'hidden_size_3': 650}. Best is trial 27 with value: 1.0.
+Trial 90 pruned.
+Trial 91 pruned.
+Trial 92 finished with value: 1.0 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 3950, 'hidden_size_1': 1700, 'hidden_size_2': 2700}. Best is trial 27 with value: 1.0.
+Trial 93 pruned.
+Trial 94 pruned.
+Trial 95 pruned.
+Trial 96 pruned.
+Trial 97 pruned.
+Trial 98 pruned.
+Trial 99 pruned.
+Trial 100 pruned.
+Trial 101 pruned.
+Trial 102 pruned.
+Trial 103 pruned.
+Trial 104 pruned.
+Trial 105 pruned.
+Trial 106 pruned.
+Trial 107 pruned.
+Trial 108 pruned.
+Trial 109 pruned.
+Trial 110 pruned.
+Trial 111 pruned.
+Trial 112 pruned.
+Trial 113 pruned.
+Trial 114 pruned.
+Trial 115 pruned.
+Trial 116 pruned.
+Trial 117 pruned.
+Trial 118 pruned.
+Trial 119 pruned.
+Trial 120 pruned.
+Trial 121 finished with value: 0.9900000095367432 and parameters: {'num_layers': 1, 'dropout_rate': 0.3, 'hidden_size_0': 200}. Best is trial 27 with value: 1.0.
+Trial 122 pruned.
+Trial 123 pruned.
+Trial 124 pruned.
+Trial 125 pruned.
+Trial 126 finished with value: 0.9900000095367432 and parameters: {'num_layers': 1, 'dropout_rate': 0.1, 'hidden_size_0': 650}. Best is trial 27 with value: 1.0.
+Trial 127 pruned.
+Trial 128 pruned.
+Trial 129 pruned.
+Trial 130 pruned.
+Trial 131 pruned.
+Trial 132 pruned.
+Trial 133 pruned.
+Trial 134 pruned.
+Trial 135 pruned.
+Trial 136 pruned.
+Trial 137 pruned.
+Trial 138 pruned.
+Trial 139 finished with value: 0.9800000190734863 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 1300, 'hidden_size_1': 3850, 'hidden_size_2': 1500}. Best is trial 27 with value: 1.0.
+Trial 140 pruned.
+Trial 141 pruned.
+Trial 142 pruned.
+Trial 143 pruned.
+Trial 144 pruned.
+Trial 145 pruned.
+Trial 146 pruned.
+Trial 147 pruned.
+Trial 148 finished with value: 0.9800000190734863 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 950, 'hidden_size_1': 2600, 'hidden_size_2': 200}. Best is trial 27 with value: 1.0.
+Trial 149 pruned.

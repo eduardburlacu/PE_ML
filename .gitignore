@@ -1,0 +1,8 @@
+*.ckpt
+*.pt
+*.pdf
+*.pth
+*.png
+*.pyc
+*Zone.Identifier
+*.mat

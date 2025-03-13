@@ -1,0 +1,31 @@
+Stage 2 (Architecture search) Best trial:
+  num_layers: 1
+  dropout_rate: 0.2
+  hidden_size_0: 1880
+Final best configuration:
+  lr: 0.008953359354560458
+  batch_size: 32
+  step_size: 20
+  gamma: 0.8284944216939796
+  num_layers: 1
+  dropout_rate: 0.2
+  hidden_size_0: 1880
+
+
+Refined search:
+
+Stage 2 (Architecture search) Best trial:
+  num_layers: 1
+  dropout_rate: 0.0
+  hidden_size_0: 4140
+Final best configuration:
+  lr: 0.008953359354560458
+  batch_size: 32
+  step_size: 20
+  gamma: 0.8284944216939796
+  num_layers: 1
+  dropout_rate: 0.0
+  hidden_size_0: 4140
+
+
+ [I 2025-02-25 17:25:20,100] Trial 92 finished with value: 1.0 and parameters: {'num_layers': 3, 'dropout_rate': 0.1, 'hidden_size_0': 3950, 'hidden_size_1': 1700, 'hidden_size_2': 2700}. Best is trial 27 with value: 1.0.
