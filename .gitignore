@@ -6,3 +6,4 @@
 *.pyc
 *Zone.Identifier
 *.mat
+*.ipynb_checkpoints
