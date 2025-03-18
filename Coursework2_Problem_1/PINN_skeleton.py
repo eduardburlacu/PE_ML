@@ -1,12 +1,26 @@
+from typing import Callable
+
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import numpy as np
 import scipy
 
+# Define the device to be used by student or grader
+# I have MPC accelerator, but most people use cuda
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+
+torch.set_default_device(device)
+print(f"Using device: {device}")
+
 # Define Neural Network
 class DenseNet(nn.Module):
-    def __init__(self, layers, nonlinearity):
+    def __init__(self, layers:list[int], nonlinearity:Callable):
         super(DenseNet, self).__init__()
 
         self.n_layers = len(layers) - 1
@@ -43,7 +57,7 @@ Boundary   = torch.tensor(data['Boundary'], dtype=torch.float64, requires_grad=T
 # truth solution from FEM
 disp_truth = torch.tensor(data['disp_data'], dtype=torch.float64)
 
-# connectivity matrix - this helps you to plot the figure but we do not need it for PINN
+# connectivity matrix - this helps you to plot the figure, but we do not need it for PINN
 t_connect  = torch.tensor(data['t'].astype(float), dtype=torch.float64)
 
 # all collocation points
@@ -72,18 +86,21 @@ stress_net = DenseNet(Stress_layer,nn.Tanh) # Note we choose hyperbolic tangent 
 disp_net =  DenseNet(Disp_layer,nn.Tanh)
 
 # Define material properties
-E =
-mu =
+E = 10.
+mu = 0.3
 
 stiff = E/(1-mu**2)*torch.tensor([[1,mu,0],[mu,1,0],[0,0,(1-mu)/2]]) # Hooke's law for plane stress
 stiff = stiff.unsqueeze(0)
 
 # PINN requires super large number of iterations to converge (on the order of 50e^3-100e^3)
 #
-iterations =
+iterations = 100E3
+# LR scheduler
+step_size = 1_000
+gamma = 0.9
 
 # Define loss function
-loss_func =
+loss_func = nn.MSELoss()
 
 # Broadcast stiffness for batch multiplication later
 stiff_bc = stiff
@@ -94,8 +111,8 @@ stiff_bc = torch.broadcast_to(stiff_bc, (len(Boundary),3,3))
 params = list(stress_net.parameters()) + list(disp_net.parameters())
 
 # Define optimizer and scheduler
-optimizer =
-scheduler =
+optimizer = torch.optim.Adam(params, lr=step_size)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 for epoch in range(iterations):
     scheduler.step()
@@ -113,12 +130,12 @@ for epoch in range(iterations):
 
     # find the derivatives
     dudx = torch.autograd.grad(u, x, grad_outputs=torch.ones_like(u),create_graph=True)[0]
-    dvdx =
+    dvdx = torch.autograd.grad(v, x, grad_outputs=torch.ones_like(v),create_graph=True)[0]
 
     # Define strain
     e_11 = dudx[:,0].unsqueeze(1)
     e_22 = dvdx[:,1].unsqueeze(1)
-    e_12 =
+    e_12 = (0.5 * (dudx[:,1] + dvdx[:,0])).unsqueeze(1) #check on this
 
     e = torch.cat((e_11,e_22,e_12), 1)
     e = e.unsqueeze(2)
@@ -133,15 +150,15 @@ for epoch in range(iterations):
     disp_bc = disp_net(Boundary)
     sigma_bc = stress_net(Boundary)
     u_bc = disp_bc[:,0]
-    v_bc =
+    v_bc = disp_bc[:,1]
 
     # Compute the strain and stresses at the boundary
     dudx_bc = torch.autograd.grad(u_bc, Boundary, grad_outputs=torch.ones_like(u_bc),create_graph=True)[0]
-    dvdx_bc =
+    dvdx_bc = torch.autograd.grad(v_bc, Boundary, grad_outputs=torch.ones_like(v_bc),create_graph=True)[0]
 
     e_11_bc = dudx_bc[:,0].unsqueeze(1)
     e_22_bc = dvdx_bc[:,1].unsqueeze(1)
-    e_12_bc =
+    e_12_bc = (0.5 * (dudx_bc[:,1] + dvdx_bc[:,0])).unsqueeze(1) #check on this
 
     e_bc = torch.cat((e_11_bc,e_22_bc,e_12_bc), 1)
     e_bc = e_bc.unsqueeze(2)
@@ -154,35 +171,35 @@ for epoch in range(iterations):
     #============= equilibrium ===================#
 
     sig_11 = sigma[:,0]
-    sig_22 =
-    sig_12 =
+    sig_22 = sigma[:,1]
+    sig_12 = sigma[:,2]
 
     # stress equilibrium in x and y direction
     dsig11dx = torch.autograd.grad(sig_11, x, grad_outputs=torch.ones_like(sig_11),create_graph=True)[0]
-    dsig22dx =
-    dsig12dx =
+    dsig22dx = torch.autograd.grad(sig_22, x, grad_outputs=torch.ones_like(sig_22),create_graph=True)[0]
+    dsig12dx = torch.autograd.grad(sig_12, x, grad_outputs=torch.ones_like(sig_12),create_graph=True)[0]
 
     eq_x1 = dsig11dx[:,0]+dsig12dx[:,1]
-    eq_x2 =
+    eq_x2 = dsig12dx[:,0]+dsig22dx[:,1]
 
     # zero body forces
     f_x1 = torch.zeros_like(eq_x1)
     f_x2 = torch.zeros_like(eq_x2)
 
     loss_eq1 = loss_func(eq_x1, f_x1)
-    loss_eq2 =
+    loss_eq2 = loss_func(eq_x2, f_x2)
     #========= boundary ========================#
 
     # specify the boundary condition
-    tau_R =
-    tau_T =
+    tau_R = 0.1
+    tau_T = 0.0
     #
     u_L= disp_net(L_boundary)
     u_B = disp_net(B_boundary)
 
     sig_R = stress_net(R_boundary)
-    sig_T =
-    sig_C =
+    sig_T = stress_net(T_boundary)
+    sig_C = stress_net(C_boundary)
 
     # Symmetry boundary condition left
     loss_BC_L = loss_func(u_L[:,0], torch.zeros_like(u_L[:,0]))
