@@ -10,7 +10,49 @@ import torch.nn.functional as F
 
 # Define Lp loss
 class LpLoss(object):
+    def __init__(self, d=2, p=2, size_average=True, reduction=True):
+        super(LpLoss, self).__init__()
 
+        # Dimension and Lp-norm type are postive
+        assert d > 0 and p > 0
+
+        self.d = d
+        self.p = p
+        self.reduction = reduction
+        self.size_average = size_average
+
+    def abs(self, x, y):
+        num_examples = x.size()[0]
+
+        # Assume uniform mesh
+        h = 1.0 / (x.size()[1] - 1.0)
+
+        all_norms = (h ** (self.d / self.p)) * torch.norm(x.view(num_examples, -1) - y.view(num_examples, -1), self.p,
+                                                          1)
+
+        if self.reduction:
+            if self.size_average:
+                return torch.mean(all_norms)
+            else:
+                return torch.sum(all_norms)
+
+        return all_norms
+
+    def rel(self, x, y):
+        num_examples = x.size()[0]
+
+        # print('x.shape',x.shape)
+        # print('y.shape',y.shape)
+        diff_norms = torch.norm(x.reshape(num_examples, -1) - y.reshape(num_examples, -1), self.p, 1)
+        y_norms = torch.norm(y.reshape(num_examples, -1), self.p, 1)
+
+        if self.reduction:
+            if self.size_average:
+                return torch.mean(diff_norms / y_norms)
+            else:
+                return torch.sum(diff_norms / y_norms)
+
+        return diff_norms / y_norms
 
     def forward(self, x, y):
         return self.rel(x, y)
@@ -125,18 +167,22 @@ class FNO(nn.Module):
         self.width = width
 
         self.p = nn.Linear(3, self.width) # input channel is 3: (a(x, y), x, y)
+
         self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv1 =
-        self.conv2 =
-        self.conv3 =
+        self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+
         self.mlp0 = MLP(self.width, self.width, self.width)
-        self.mlp1 =
-        self.mlp2 =
-        self.mlp3 =
+        self.mlp1 = MLP(self.width, self.width, self.width)
+        self.mlp2 = MLP(self.width, self.width, self.width)
+        self.mlp3 = MLP(self.width, self.width, self.width)
+
         self.w0 = nn.Conv2d(self.width, self.width, 1)
-        self.w1 =
-        self.w2 =
-        self.w3 =
+        self.w1 = nn.Conv2d(self.width, self.width, 1)
+        self.w2 = nn.Conv2d(self.width, self.width, 1)
+        self.w3 = nn.Conv2d(self.width, self.width, 1)
+
         self.act0 = nn.GELU()
         self.act1 = nn.GELU()
         self.act2 = nn.GELU()
@@ -155,22 +201,23 @@ class FNO(nn.Module):
         x = x1 + x2
         x = F.gelu(x)
 
-        x1 =
-        x1 =
-        x2 =
-        x =
-        x =
+        x1 = self.conv1(x)
+        x1 = self.mlp1(x1)
+        x2 = self.w1(x)
+        x = x1 + x2
+        x = F.gelu(x)
 
-        x1 =
-        x1 =
-        x2 =
-        x =
-        x =
+        x1 = self.conv2(x)
+        x1 = self.mlp2(x1)
+        x2 = self.w2(x)
+        x = x1 + x2
+        x = F.gelu(x)
 
-        x1 =
-        x1 =
-        x2 =
-        x =
+        x1 = self.conv3(x)
+        x1 = self.mlp3(x1)
+        x2 = self.w3(x)
+        x = x1 + x2
+        x = F.gelu(x)
 
         x = self.q(x)
         x = x.squeeze(1)
@@ -185,6 +232,7 @@ class FNO(nn.Module):
         return torch.cat((gridx, gridy), dim=-1)
 
 if __name__ == '__main__':
+
     ############################# Data processing #############################
     # Read data from mat
     train_path = 'Darcy_2D_data_train.mat'
@@ -211,24 +259,26 @@ if __name__ == '__main__':
     print(u_test.shape)
 
     # Create data loader
-    batch_size =
+    batch_size = 32
     train_set = Data.TensorDataset(a_train, u_train)
     train_loader = Data.DataLoader(train_set, batch_size, shuffle=True)
 
     ############################# Define and train network #############################
-    # Create RNN instance, define loss function and optimizer
+    # Create FNO instance, define loss function and optimizer
     modes = 12
     width = 32
+    epochs = 50
+    lr = 0.001
+
     net = FNO(modes, modes, width)
     n_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
     print('Number of parameters: %d' % n_params)
 
     loss_func = LpLoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=600, gamma=0.6)
 
     # Train network
-    epochs = 200
     print("Start training FNO for {} epochs...".format(epochs))
     start_time = time()
 
@@ -279,4 +329,33 @@ if __name__ == '__main__':
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
+    plt.tight_layout()
     plt.grid()
+    plt.show()
+
+    # Plotting the contour plots
+    with torch.no_grad():
+        test_output = net(a_test)
+        test_output = u_normalizer.decode(test_output)
+
+    # Select a sample from the test set
+    sample_id = 0  # You can change this to plot different samples
+    u_true_sample = u_test[sample_id].numpy()
+    u_pred_sample = test_output[sample_id].numpy()
+
+    # Create the plot
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    vmin = min(u_true_sample.min(), u_pred_sample.min())
+    vmax = max(u_true_sample.max(), u_pred_sample.max())
+    # Plot the true solution
+    im1 = axes[0].contourf(u_true_sample, cmap='jet', vmin=vmin, vmax=vmax)
+    axes[0].set_title('True Solution')
+    fig.colorbar(im1, ax=axes[0])
+
+    # Plot the predicted solution
+    im2 = axes[1].contourf(u_pred_sample, cmap='jet', vmin=vmin, vmax=vmax)
+    axes[1].set_title('Predicted Solution')
+    fig.colorbar(im2, ax=axes[1])
+
+    plt.tight_layout()
+    plt.show()

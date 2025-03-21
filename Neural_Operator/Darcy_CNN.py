@@ -169,7 +169,7 @@ if __name__ == '__main__':
     train_loader = Data.DataLoader(train_set, batch_size, shuffle=True)
 
     ############################# Define and train network #############################
-    # Create RNN instance, define loss function and optimizer
+    # Create CNN instance, define loss function and optimizer
     in_channels = 1
     out_channels = 1
     num_layers = 3

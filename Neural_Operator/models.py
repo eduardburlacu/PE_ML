@@ -36,7 +36,6 @@ class UpBlock(nn.Module):
         x = torch.cat([x, skip], dim=1)
         return self.conv(x)
 
-
 class DownBlock(nn.Module):
     """Encoder block with downsampling"""
 
