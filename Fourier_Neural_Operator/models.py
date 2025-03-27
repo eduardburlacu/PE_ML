@@ -144,10 +144,12 @@ class UNet2D(nn.Module):
 
 if __name__ == '__main__':
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    in_channels = 2
-    out_channels = 3
-    num_layers = 2
+    in_channels = 1
+    out_channels = 1
+    num_layers = 3
     pool_size = 2
+    channel_width = 32
+
     a = torch.randn((1, in_channels, 32, 32), device=device)
     model = UNet2D(
         in_channels=in_channels,
@@ -155,6 +157,7 @@ if __name__ == '__main__':
         num_layers=num_layers,
         pool_size=pool_size
     )
+    print(model)
     model.to(device)
 
     with torch.no_grad():

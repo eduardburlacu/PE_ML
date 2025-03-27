@@ -1,14 +1,23 @@
 import torch
 import torch.utils.data
 import torch.nn as nn
-import torch.optim as optim
-
+from tqdm import tqdm
 
 import numpy as np
 import scipy.io
 import h5py
 
 import matplotlib.pyplot as plt
+
+to_cuda = False
+to_mps = False
+device = None
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    to_cuda = True
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+    to_mps = True
 
 class DenseNet(nn.Module):
     def __init__(self, layers, nonlinearity):
@@ -34,11 +43,12 @@ class DenseNet(nn.Module):
 
 
 class MatReader(object):
-    def __init__(self, file_path, to_torch=True, to_cuda=False, to_float=True):
+    def __init__(self, file_path, to_torch=True, to_cuda=False, to_mps=False, to_float=True, device=None):
         super(MatReader, self).__init__()
 
         self.to_torch = to_torch
         self.to_cuda = to_cuda
+        self.to_mps = to_mps
         self.to_float = to_float
 
         self.file_path = file_path
@@ -46,6 +56,7 @@ class MatReader(object):
         self.data = None
         self.old_mat = None
         self._load_file()
+        self.device = device
 
     def _load_file(self):
         try:
@@ -71,14 +82,16 @@ class MatReader(object):
 
         if self.to_torch:
             x = torch.from_numpy(x)
-
-            if self.to_cuda:
-                x = x.cuda()
+            if self.device:
+                x = x.to(device)
 
         return x
 
     def set_cuda(self, to_cuda):
         self.to_cuda = to_cuda
+
+    def set_mps(self, to_mps):
+        self.to_mps = to_mps
 
     def set_torch(self, to_torch):
         self.to_torch = to_torch
@@ -89,7 +102,7 @@ class MatReader(object):
 
 class RNO(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, layer_input, layer_hidden):
-        super(RNN, self).__init__()
+        super(RNO, self).__init__()
 
         self.layers = nn.ModuleList()
         for j in range(len(layer_input) - 1):
@@ -105,7 +118,7 @@ class RNO(nn.Module):
             if j != len(layer_hidden) - 1:
                 self.hidden_layers.append(nn.SELU())
 
-    def forward(self, input, output, hidden,dt):
+    def forward(self, input, output, hidden, dt):
         h0 = hidden
         h = torch.cat((output, hidden), 1)
         for _, m in enumerate(self.hidden_layers):
@@ -123,15 +136,15 @@ class RNO(nn.Module):
 
     def initHidden(self,b_size):
 
-        return torch.zeros(b_size, self.hidden_size)
+        return torch.zeros(b_size, self.hidden_size, device=device)
 
 #Define your data path
-TRAIN_PATH = r'data\Plas_vis_3mat_diffrate.mat'
+TRAIN_PATH = r'./viscodata_3mat.mat'
 
 # define train and test data
-Ntotal     =
-train_size =
-test_start =
+Ntotal     = 400
+train_size = 320
+test_start = 320
 
 N_test = Ntotal-test_start
 
@@ -141,11 +154,11 @@ F_FIELD = 'epsi_tol'
 SIG_FIELD = 'sigma_tol'
 
 # Define loss function
-loss_func =
+loss_func = nn.MSELoss()
 ######### Preprocessing data ####################
-temp = torch.zeros(Ntotal,1)
+temp = torch.zeros(Ntotal,1, device=device)
 
-data_loader = MatReader(TRAIN_PATH)
+data_loader = MatReader(TRAIN_PATH,to_cuda=to_cuda, to_mps=to_mps, device=device)
 data_input  = data_loader.read_field(F_FIELD).contiguous().view(Ntotal, -1)
 data_output  = data_loader.read_field(SIG_FIELD).contiguous().view(Ntotal, -1)
 
@@ -159,13 +172,44 @@ inputsize   = data_input.size()[1]
 
 
 # Normalize your data using the min-max normalizer
-data_input  =
-data_output =
+class DataNormalizer(object):
+    """
+    Input shape: (dataset_size, time_steps, 6) where 6 is the number of strain/ stress components (exx, eyy, ezz, exy, eyz, ezx).
+    Normalize the strain/stress data to have range 0,1.
+    """
+
+    def __init__(self, data, epsilon=1e-4):
+        self.epsilon = epsilon
+        # Compute min and max across dataset_size and time_steps
+        self.min = torch.amin(data, dim=(0, 1), keepdim=True)
+        self.max = torch.amax(data, dim=(0, 1), keepdim=True)
+
+        self.range = self.max - self.min
+        # Prevent zero-range issues
+        self.range = torch.where(self.range > self.epsilon, self.range, torch.tensor(1.0))
+
+    @torch.no_grad()
+    def normalize(self, data):
+        return (data - self.min) / self.range
+
+    def denormalize(self, data):
+        return data * self.range + self.min
+
+input_normalizer = DataNormalizer(data_input)
+output_normalizer = DataNormalizer(data_output)
+
+data_input  = input_normalizer.normalize(data_input)
+data_output = output_normalizer.normalize(data_output)
 
 # define train and test data
-x_train = data_input[0:train_size,:]
-y_train = data_output[0:train_size,:]
+frac_validation = 0.10
+val_start = int((1-frac_validation)*train_size)
+x_train = data_input[0:val_start,:]
+y_train = data_output[0:val_start,:]
 
+x_val   = data_input[val_start:train_size,:]
+y_val   = data_output[val_start:train_size,:]
+valsize = x_val.shape[0]
 # define the time increment dt in the RNO
 dt = 1.0/(y_train.shape[1]-1)
 
@@ -175,64 +219,113 @@ testsize = x_test.shape[0]
 
 
 # Define number of hidden variables to use
-n_hidden =
+n_hidden = 2
 # Define the RNO architecture
 input_dim     = 1
 output_dim    = 1
 
 # Define RNO
-layer_input = [input_dim+output_dim+n_hidden, 100,100,100,output_dim]
-layer_hidden =
+layer_input = [
+    input_dim+output_dim+n_hidden,
+    100, 100,100,
+    output_dim
+]
+
+layer_hidden = [output_dim + n_hidden, 20, 20, n_hidden]
+
 net = RNO(input_dim, n_hidden, output_dim,layer_input,layer_hidden)
 
-if USE_CUDA:
-    net.cuda()
-
-# Number of training epochs
-epochs =
+print(f"Number of parameters: {sum(p.numel() for p in net.parameters())}")
+if device is not None:
+    net.to(device)
 
 # Optimizer and learning drate scheduler
-optimizer =
-scheduler =
+optimizer = torch.optim.AdamW(net.parameters(), lr=1e-3, weight_decay=1e-2)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
 
+# Number of training epochs
+epochs = 3
 # Batch size
-b_size =
+b_size = 32
 
 # Wrap training data in loader
-train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=b_size,
-                                           shuffle=True)
+train_loader = torch.utils.data.DataLoader(
+    torch.utils.data.TensorDataset(x_train, y_train),
+    batch_size=b_size,
+    shuffle=True,
+)
+
 # Train neural net
 T = inputsize
 train_err = np.zeros((epochs,))
+val_err = np.zeros((epochs,))
 test_err = np.zeros((epochs,))
-y_test_approx = torch.zeros(testsize, inputsize)
+y_val_approx = torch.zeros(valsize, inputsize, device=device)
+y_test_approx = torch.zeros(testsize, inputsize, device=device)
 
-for ep in range(epochs):
+for ep in tqdm(range(epochs)):
     scheduler.step()
     train_loss = 0.0
     test_loss  = 0.0
     for x, y in train_loader:
         hidden = net.initHidden(b_size)
         optimizer.zero_grad()
-        y_approx = torch.zeros(b_size,T)
+        y_approx = torch.zeros(b_size,T, device=device)
         y_true  = y
         y_approx[:,0] = y_true[:,0]
         for i in range(1,T):
-            y_approx[:,i], hidden = net(x[:,i].unsqueeze(1), x[:,i-1].unsqueeze(1), hidden,dt)
+            y_approx[:,i], hidden = net(
+                x[:,i].unsqueeze(1),
+                x[:,i-1].unsqueeze(1),
+                hidden,
+                dt
+            )
 
         loss = loss_func(y_approx,y_true)
         loss.backward()
-        train_loss = train_loss + loss.item()
-
+        train_loss += loss.item()
         optimizer.step()
+
     with torch.no_grad():
+        hidden_val = net.initHidden(valsize)
+        y_val_approx[:,0] = y_val[:,0]
+        for j in range(1,T):
+           y_val_approx[:, j], hidden_val = net(
+               x_val[:, j].unsqueeze(1),
+               x_val[:, j-1].unsqueeze(1),
+               hidden_val,
+               dt
+           )
+        val_loss = loss_func(y_val_approx,y_val).item()
+
         hidden_test = net.initHidden(testsize)
         y_test_approx[:,0] = y_test[:,0]
         for j in range(1,T):
-           y_test_approx[:, j], hidden_test = net(x_test[:, j].unsqueeze(1), x_test[:, j-1].unsqueeze(1), hidden_test,dt)
-        t_loss = loss_func(y_test_approx,y_test)
-        test_loss = t_loss.item()
+           y_test_approx[:, j], hidden_test = net(
+               x_test[:, j].unsqueeze(1),
+               x_test[:, j-1].unsqueeze(1),
+               hidden_test,
+               dt
+           )
+        test_loss = loss_func(y_test_approx,y_test).item()
 
     train_err[ep] = train_loss/len(train_loader)
+    val_err[ep] = val_loss
     test_err[ep]  = test_loss
-    print(ep, train_err[ep],test_err[ep])
+
+    print(f"Epoch: {ep+1}/{epochs} | Train loss: {train_err[ep]:.4f} | Val loss: {val_err[ep]:.4f} | Test loss: {test_err[ep]:.4f}")
+
+
+# Plot the training, validation and test losses
+plt.figure(figsize=(10, 5))
+plt.plot(train_err, label='Train Loss')
+plt.plot(val_err, label='Validation Loss')
+plt.plot(test_err, label='Test Loss')
+plt.semilogy()
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training, Validation and Test Losses')
+plt.legend()
+plt.grid()
+plt.tight_layout()
+plt.show()
