@@ -1,5 +1,5 @@
 seed: 42
-save_path: "model_s=4.pt"
+save_path: "model_s=2.pt"
 
 # Architecture
 hidden_size: 2
@@ -11,9 +11,10 @@ weight_decay: 0.01
 step_size: 50
 gamma: 0.5
 # History
-epochs: 100
+epochs: 80
 batch_size: 32
 
 # Data
+s: 4 # downsampling factor
 train_size: 320 #maximum is 400, the rest is used for testing
 frac_val: 0.1 # % of train data to use for validation

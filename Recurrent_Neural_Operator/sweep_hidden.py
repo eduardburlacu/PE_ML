@@ -236,131 +236,96 @@ def main(cfg : DictConfig) -> None:
     input_dim = 1
     output_dim = 1
 
-    # Define RNO
-    layer_input = [
-        input_dim + output_dim + 2,
-        100, 100, 100,
-        output_dim
-    ]
-
-    layer_hidden = [output_dim + 2, 20, 20, 2]
-
-
-    # Use command-line arguments
-    n_hidden = cfg.hidden_size
-
-    net = RNO(input_dim, n_hidden, output_dim,layer_input,layer_hidden)
-
-    print(f"Number of parameters: {sum(p.numel() for p in net.parameters())}")
-    if device is not None:
-        net.to(device)
-
-    # Optimizer and learning drate scheduler
-    optimizer = torch.optim.AdamW(net.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=cfg.step_size, gamma=cfg.gamma)
-
-    # Number of training epochs
-    epochs = cfg.epochs
-    # Batch size
-    b_size = cfg.batch_size
-
-    # Wrap training data in loader
-    train_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(x_train, y_train),
-        batch_size=b_size,
-        shuffle=True,
-    )
-
-    # Train neural net
-    T = inputsize
-    train_err = np.zeros((epochs,))
-    val_err = np.zeros((epochs,))
-    test_err = np.zeros((epochs,))
-    y_val_approx = torch.zeros(valsize, inputsize, device=device)
-    y_test_approx = torch.zeros(testsize, inputsize, device=device)
-
-    for ep in tqdm(range(epochs), leave=True, position=0):
-        scheduler.step()
-        train_loss = 0.0
-        test_loss  = 0.0
-        for x, y in train_loader:
-            hidden = net.initHidden(b_size)
-            optimizer.zero_grad()
-            y_approx = torch.zeros(b_size,T, device=device)
-            y_true  = y
-            y_approx[:,0] = y_true[:,0]
-            for i in range(1,T):
-                y_approx[:,i], hidden = net(
-                    x[:,i].unsqueeze(1),
-                    x[:,i-1].unsqueeze(1),
-                    hidden,
-                    dt
-                )
-
-            loss = loss_func(y_approx,y_true)
-            loss.backward()
-            train_loss += loss.item()
-            optimizer.step()
-
-        with torch.no_grad():
-            hidden_val = net.initHidden(valsize)
-            y_val_approx[:,0] = y_val[:,0]
-            for j in range(1,T):
-               y_val_approx[:, j], hidden_val = net(
-                   x_val[:, j].unsqueeze(1),
-                   x_val[:, j-1].unsqueeze(1),
-                   hidden_val,
-                   dt
-               )
-            val_loss = loss_func(y_val_approx,y_val).item()
-
-            hidden_test = net.initHidden(testsize)
-            y_test_approx[:,0] = y_test[:,0]
-            for j in range(1,T):
-               y_test_approx[:, j], hidden_test = net(
-                   x_test[:, j].unsqueeze(1),
-                   x_test[:, j-1].unsqueeze(1),
-                   hidden_test,
-                   dt
-               )
-            test_loss = loss_func(y_test_approx,y_test).item()
-
-        train_err[ep] = train_loss/len(train_loader)
-        val_err[ep] = val_loss
-        test_err[ep]  = test_loss
-
-        logging.info(f"Epoch:{ep+1}/{epochs} | Train:{train_err[ep]:.6f} | Val:{val_err[ep]:.6f} | Test:{test_err[ep]:.6f}")
-    # Plot the training, validation and test losses
     plt.figure(figsize=(10, 5))
-    plt.plot(train_err, label='Train Loss')
-    plt.plot(val_err, label='Validation Loss')
-    plt.plot(test_err, label='Test Loss')
+    # Use command-line arguments
+    for n_hidden in range(4):
+        # Define RNO
+        layer_input = [
+            input_dim + output_dim + n_hidden,
+            100, 100, 100,
+            output_dim
+        ]
+
+        layer_hidden = [output_dim + n_hidden, 20, 20, n_hidden]
+
+        net = RNO(input_dim, n_hidden, output_dim,layer_input,layer_hidden)
+
+        print(f"Number of parameters: {sum(p.numel() for p in net.parameters())}")
+        if device is not None:
+            net.to(device)
+
+        # Optimizer and learning drate scheduler
+        optimizer = torch.optim.AdamW(net.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=cfg.step_size, gamma=cfg.gamma)
+
+        # Number of training epochs
+        epochs = cfg.epochs
+        # Batch size
+        b_size = cfg.batch_size
+
+        # Wrap training data in loader
+        train_loader = torch.utils.data.DataLoader(
+            torch.utils.data.TensorDataset(x_train, y_train),
+            batch_size=b_size,
+            shuffle=True,
+        )
+
+        # Train neural net
+        T = inputsize
+        train_err = np.zeros((epochs,))
+        val_err = np.zeros((epochs,))
+        y_val_approx = torch.zeros(valsize, inputsize, device=device)
+
+        for ep in tqdm(range(epochs), leave=True, position=0):
+            scheduler.step()
+            for x, y in train_loader:
+                hidden = net.initHidden(b_size)
+                optimizer.zero_grad()
+                y_approx = torch.zeros(b_size,T, device=device)
+                y_true  = y
+                y_approx[:,0] = y_true[:,0]
+                for i in range(1,T):
+                    y_approx[:,i], hidden = net(
+                        x[:,i].unsqueeze(1),
+                        x[:,i-1].unsqueeze(1),
+                        hidden,
+                        dt
+                    )
+                loss = loss_func(y_approx,y_true)
+                loss.backward()
+                optimizer.step()
+
+            with torch.no_grad():
+                hidden_val = net.initHidden(valsize)
+                y_val_approx[:,0] = y_val[:,0]
+                for j in range(1,T):
+                   y_val_approx[:, j], hidden_val = net(
+                       x_val[:, j].unsqueeze(1),
+                       x_val[:, j-1].unsqueeze(1),
+                       hidden_val,
+                       dt
+                   )
+                val_loss = loss_func(y_val_approx,y_val).item()
+
+            val_err[ep] = val_loss
+
+
+            logging.info(f"Epoch:{ep+1}/{epochs} | Val:{val_err[ep]:.6f}")
+        # Plot the training, validation and test losses
+
+        plt.plot(val_err, label=f'hidden_{n_hidden}')
+        del net, optimizer, scheduler
+
     plt.semilogy()
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.title('Training, Validation and Test Losses')
+    plt.title(', Validation Loss')
     plt.legend()
     plt.grid()
     plt.tight_layout()
     plt.show()
-    # Plot some examples from the test set
 
-    # First, denormalize the predictions and the true values
-    y_test_approx = output_normalizer.denormalize(y_test_approx)
-    y_test = output_normalizer.denormalize(y_test)
-    # Plot the first 5 examples in the same figure with more subfigures
-    fig, axs = plt.subplots(5, 1, figsize=(10, 20))
-    for i in range(5):
-        axs[i].plot(y_test[i].cpu().numpy(), label='True')
-        axs[i].plot(y_test_approx[i].cpu().numpy(), label='Predicted')
-        axs[i].set_title(f"Example {i+1}")
-        axs[i].legend()
-        axs[i].grid(True)
 
-    plt.tight_layout()
-    plt.show()
-    # Save the model
-    torch.save(net.state_dict(), cfg.save_path)
 
 if __name__ == "__main__":
     main()
