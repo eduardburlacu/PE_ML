@@ -249,7 +249,7 @@ def main(cfg : DictConfig) -> None:
         layer_hidden = [output_dim + n_hidden, 20, 20, n_hidden]
 
         net = RNO(input_dim, n_hidden, output_dim,layer_input,layer_hidden)
-
+        print(net)
         print(f"Number of parameters: {sum(p.numel() for p in net.parameters())}")
         if device is not None:
             net.to(device)

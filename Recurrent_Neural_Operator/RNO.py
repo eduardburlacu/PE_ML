@@ -150,7 +150,7 @@ class RNO(nn.Module):
 # Normalize your data using the min-max normalizer
 class DataNormalizer(object):
     """
-    Input shape: (dataset_size, time_steps, 6) where 6 is the number of strain/ stress components (exx, eyy, ezz, exy, eyz, ezx).
+    Input shape: (dataset_size, time_steps, 1).
     Normalize the strain/stress data to have range 0,1.
     """
 
